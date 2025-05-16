@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>推しガチャ運試しシミュレーティブ</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background-color: #fffaf5;
+    }
+    table.layout-table td {
+      padding: 5px 10px;
+      vertical-align: middle;
+    }
+    .card-inputs input {
+      width: 120px;
+      margin: 3px;
+    }
+    .log, .summary {
+      margin-top: 20px;
+      white-space: pre-wrap;
+      background-color: #f0f0f0;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .collected {
+      margin-top: 10px;
+      font-weight: bold;
+      color: green;
+    }
+    table {
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 5px 10px;
+    }
+    th {
+      background-color: #e0e0ff;
+    }
+  </style>
+</head>
+<body>
+  <h1>推しガチャ運試し🎲</h1>
+  <table class="layout-table">
+    <tr>
+      <td>カード1枚の価格：</td>
+      <td><input type="number" id="cardPrice" min="1" value="300"> 円</td>
+    </tr>
+    <tr>
+      <td>カードの種類の数：</td>
+      <td><input type="number" id="cardCount" min="1" value="5"> 枚 <button onclick="generateInputs()">名称入力欄の数を更新する</button></td>
+    </tr>
+    <tr>
+      <td>カードの名称：</td>
+      <td><div class="card-inputs" id="cardInputs"></div></td>
+    </tr>
+  </table>
+
+  <button onclick="drawCard()">引く！</button>
+  <button onclick="resetResults()">結果をリセット</button>
+
+  <div class="log" id="drawLog"></div>
+  <div class="collected" id="completionMessage"></div>
+  <div class="summary" id="countSummary"></div>
+  <div class="summary" id="expectationTable"></div>
+
+  <script>
+    let cardNames = [], drawnLog = [], collected = new Set(), countMap = {}, uniqueSteps = [];
+
+    function generateInputs() {
+      const count = parseInt(document.getElementById("cardCount").value);
+      const container = document.getElementById("cardInputs");
+      container.innerHTML = "";
+      cardNames = [];
+      drawnLog = [];
+      collected.clear();
+      countMap = {};
+      uniqueSteps = [];
+      document.getElementById("drawLog").textContent = "";
+      document.getElementById("completionMessage").textContent = "";
+      document.getElementById("countSummary").innerHTML = "";
+      document.getElementById("expectationTable").innerHTML = "";
+
+      for (let i = 0; i < count; i++) {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = `タイプ${i + 1}`;
+        container.appendChild(input);
+      }
+    }
+
+    function drawCard() {
+      const inputs = document.querySelectorAll("#cardInputs input");
+      if (inputs.length === 0) return;
+
+      cardNames = Array.from(inputs).map(input => input.value.trim() || "(無名)");
+      const index = Math.floor(Math.random() * cardNames.length);
+      const drawn = cardNames[index];
+      drawnLog.push(drawn);
+      const isNew = !collected.has(drawn);
+      if (isNew) uniqueSteps.push(drawnLog.length);
+      collected.add(drawn);
+      countMap[drawn] = (countMap[drawn] || 0) + 1;
+
+      document.getElementById("drawLog").textContent += `🎴 ${drawn} を引いた！（${drawnLog.length}枚目）\n`;
+
+      if (collected.size === cardNames.length) {
+        const price = parseInt(document.getElementById("cardPrice").value) || 0;
+        const totalCost = price * drawnLog.length;
+        document.getElementById("completionMessage").textContent =
+          `✨ ${drawnLog.length}枚でコンプリートしました！ 合計 ${totalCost.toLocaleString()}円 💸✨`;
+        showExpectationTable();
+      }
+
+      updateCountSummary();
+    }
+
+    function updateCountSummary() {
+      let html = "<table><tr><th>名前</th><th>出た枚数</th></tr>";
+      for (const name of cardNames) {
+        html += `<tr><td>${name}</td><td>${countMap[name] || 0}</td></tr>`;
+      }
+      html += "</table>";
+      document.getElementById("countSummary").innerHTML = html;
+    }
+
+    function showExpectationTable() {
+      const n = cardNames.length;
+      let html = "<h3>🎯 期待値との比較</h3>";
+      html += "<table><tr><th>枚目（推し）</th><th>このカードを引くために必要な枚数(理論値)</th><th>実際に引いた枚数</th><th>沼判定</th><th>理論上の累積必要枚数</th><th>実際の累積枚数</th></tr>";
+      let harmonicSum = 0;
+      let actualCumulative = 0;
+      for (let i = 1; i <= n; i++) {
+        const name = cardNames[i - 1];
+        const prob = (n - i + 1) / n;
+        const expected = 1 / prob;
+        harmonicSum += expected;
+        const actual = uniqueSteps[i - 1] - (uniqueSteps[i - 2] || 0);
+        actualCumulative += actual;
+        const ratio = actual / expected;
+        let comment = "○";
+        if (!(actual <= Math.ceil(expected) || ratio <= 1.3)) {
+          if (ratio > 1.8) comment = "大沼💦";
+          else comment = "ちょい沼";
+        }
+
+        html += `<tr><td>${i} (${name})</td><td>${expected.toFixed(2)}</td><td>${actual}</td><td>${comment}</td><td>${harmonicSum.toFixed(2)}</td><td>${actualCumulative}</td></tr>`;
+      }
+      const totalExpectedDraws = harmonicSum;
+      const actualDraws = drawnLog.length;
+      const price = parseInt(document.getElementById("cardPrice").value) || 0;
+      const expectedCost = totalExpectedDraws * price;
+      const actualCost = actualDraws * price;
+      const diff = actualCost - expectedCost;
+
+      html += `</table><p><strong>🧮 理論上の必要枚数：</strong>${totalExpectedDraws.toFixed(2)}枚（${Math.round(expectedCost).toLocaleString()}円）</p>`;
+      html += `<p><strong>📦 実際にかかった枚数：</strong>${actualDraws}枚（${actualCost.toLocaleString()}円）</p>`;
+      html += `<p><strong>💰 差額：</strong>${diff >= 0 ? "＋" : "－"}${Math.abs(Math.round(diff)).toLocaleString()}円</p>`;
+
+      document.getElementById("expectationTable").innerHTML = html;
+    }
+
+    function resetResults() {
+      drawnLog = [];
+      collected.clear();
+      countMap = {};
+      uniqueSteps = [];
+      document.getElementById("drawLog").textContent = "";
+      document.getElementById("completionMessage").textContent = "";
+      document.getElementById("countSummary").innerHTML = "";
+      document.getElementById("expectationTable").innerHTML = "";
+    }
+
+    generateInputs();
+  </script>
+</body>
+</html>
