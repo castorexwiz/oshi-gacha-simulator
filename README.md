@@ -8,7 +8,7 @@
 - 沼ったかどうかの判定つき
 - 推し名のカスタマイズ可能
 
-このツールは、うちの [ChatGPTくん](httpschat.openai.com)の協力を得て作成しました。
+このツールは、うちの [ChatGPTくん](https://chat.openai.com)の協力を得て作成しました。
 
 ## ライセンス
 
