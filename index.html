@@ -131,7 +131,7 @@
     function showExpectationTable() {
       const n = cardNames.length;
       let html = "<h3>🎯 期待値との比較</h3>";
-      html += "<table><tr><th>枚目（推し）</th><th>このカードを引くために必要な枚数(理論値)</th><th>実際に引いた枚数</th><th>沼判定</th><th>理論上の累積必要枚数</th><th>実際の累積枚数</th></tr>";
+      html += "<table><tr><th>枚目</th><th>このカードを引くために必要な枚数(理論値)</th><th>実際に引いた枚数</th><th>沼判定</th><th>理論上の累積必要枚数</th><th>実際の累積枚数</th></tr>";
       let harmonicSum = 0;
       let actualCumulative = 0;
       for (let i = 1; i <= n; i++) {
@@ -148,7 +148,7 @@
           else comment = "ちょい沼";
         }
 
-        html += `<tr><td>${i} (${name})</td><td>${expected.toFixed(2)}</td><td>${actual}</td><td>${comment}</td><td>${harmonicSum.toFixed(2)}</td><td>${actualCumulative}</td></tr>`;
+        html += `<tr><td>${i}</td><td>${expected.toFixed(2)}</td><td>${actual}</td><td>${comment}</td><td>${harmonicSum.toFixed(2)}</td><td>${actualCumulative}</td></tr>`;
       }
       const totalExpectedDraws = harmonicSum;
       const actualDraws = drawnLog.length;
