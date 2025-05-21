@@ -44,7 +44,6 @@
 </head>
 <body>
   <h1>推しガチャ運試し🎲</h1>
-  <p>このツールは、ランダム封入された推しグッズ（カードなど）を引くシミュレーションをして、期待値との差を確認することができます。カードの枚数は自由に変更ができます。カードの名称に推しの名前を入れることもできます。</p>
   <table class="layout-table">
     <tr>
       <td>カード1枚の価格：</td>
@@ -70,6 +69,7 @@
 
   <script>
     let cardNames = [], drawnLog = [], collected = new Set(), countMap = {}, uniqueSteps = [];
+    let completionDrawCount = null;
 
     function generateInputs() {
       const count = parseInt(document.getElementById("cardCount").value);
@@ -108,11 +108,15 @@
 
       document.getElementById("drawLog").textContent += `🎴 ${drawn} を引いた！（${drawnLog.length}枚目）\n`;
 
-      if (collected.size === cardNames.length) {
+      if (collected.size === cardNames.length && completionDrawCount === null) {
+        completionDrawCount = drawnLog.length;  // ← 初回コンプリート時のみ記録
+      
         const price = parseInt(document.getElementById("cardPrice").value) || 0;
-        const totalCost = price * drawnLog.length;
+        const totalCost = price * completionDrawCount;
+      
         document.getElementById("completionMessage").textContent =
-          `✨ ${drawnLog.length}枚でコンプリートしました！ 合計 ${totalCost.toLocaleString()}円 💸✨`;
+          `✨ ${completionDrawCount}枚でコンプリートしました！ 合計 ${totalCost.toLocaleString()}円 💸✨`;
+      
         showExpectationTable();
       }
 
@@ -129,7 +133,7 @@
     }
 
     function showExpectationTable() {
-      let html = "<h3>🎯 期待値との比較</h3>";
+      let html = "<h3>🎯 期待値との比較（コンプリート時点の枚数で算出）</h3>";
       html += "<table><tr><th>n枚目（名前）</th><th>このカードを引くために必要な枚数(理論値)</th><th>実際に引いた枚数</th><th>沼判定</th><th>理論上の累積必要枚数</th><th>実際の累積枚数</th></tr>";
 
       let harmonicSum = 0;
@@ -155,6 +159,7 @@
 
         html += `<tr><td>${i + 1}（${name}）</td><td>${expected.toFixed(2)}</td><td>${actual}</td><td>${comment}</td><td>${harmonicSum.toFixed(2)}</td><td>${actualCumulative}</td></tr>`;
       }
+
       const totalExpectedDraws = harmonicSum;
       const actualDraws = drawnLog.length;
       const price = parseInt(document.getElementById("cardPrice").value) || 0;
@@ -174,6 +179,7 @@
       collected.clear();
       countMap = {};
       uniqueSteps = [];
+      completionDrawCount = null;
       document.getElementById("drawLog").textContent = "";
       document.getElementById("completionMessage").textContent = "";
       document.getElementById("countSummary").innerHTML = "";
